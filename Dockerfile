@@ -4,6 +4,7 @@ FROM python:3.9-slim
 WORKDIR /weather-ml-app
 
 # Install dependencies
+COPY requirements.txt /weather-ml-app/
 RUN pip install -r /weather-ml-app/requirements.txt
 
 # Copy the rest of the application code
