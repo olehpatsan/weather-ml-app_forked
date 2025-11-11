@@ -15,8 +15,7 @@ def classify_weather(features):
 	start = time.time()
 	prediction_index = model.predict(features)[0]
 	latency = round((time.time() - start) * 1000, 2) #we are here
-	prediction = weather_classes[1]
-	
+	prediction = weather_classes[prediction_index]
 	return prediction, latency
 
 
@@ -36,12 +35,12 @@ def home():
 			clouds = float(request.form.get('clouds', 0) or 0)
 
 			features = np.array([
-				temperature, pressure, humidity,
-				wind_speed, wind_deg, rain_1h,
-				rain_3h, snow, clouds
-			]).reshape(1, -1)
+                            float(temperature), float(pressure), float(humidity),
+                            float(wind_speed), float(wind_deg), float(rain_1h),
+                            float(rain_3h), float(snow), float(clouds)
+                        ]).reshape(1, -1)
 
-			
+
 			prediction, latency = classify_weather(features)
 
 
