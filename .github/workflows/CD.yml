@@ -1,0 +1,12 @@
+name: CD pipeline
+on:
+  workflow_run:
+    workflows: [CI Pipeline]
+    types:
+      - completed
+jobs:
+  Step_F:
+    runs-on: self-hosted
+    steps:
+      - name: Push Docker image
+        run: docker image push Dockerimage:v1
