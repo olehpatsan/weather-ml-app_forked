@@ -9,7 +9,7 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Login to Dockerhub
-        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrests.DOCKERHUB_USERNAME }} --password--stdin
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password--stdin
       - name: Push Docker image
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:v1
