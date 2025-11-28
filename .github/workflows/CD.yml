@@ -21,8 +21,8 @@ jobs:
 
       - name: Apply manifests
         run: |
-          kubectl apply -f k8s/deployment.yml
-          kubectl apply -f k8s/service.yml
+          kubectl apply -f k8s/deployment.yaml
+          kubectl apply -f k8s/service.yaml
 
       - name: Rolling update
         env:
