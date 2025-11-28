@@ -1,14 +1,40 @@
 name: CD pipeline
+
 on:
   workflow_run:
-    workflows: [CI Pipeline]
+    workflows: ["CI pipeline"]
     types:
       - completed
+
 jobs:
-  Step_G:
+  deploy:
     runs-on: self-hosted
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
     steps:
-      - name: Deploy to Kubernetes
+      - uses: actions/checkout@v4
+
+      - name: Set image tag
+        run: |
+          echo "IMAGE_TAG=${{ github.event.workflow_run.head_commit.id }}" >> $GITHUB_ENV
+          echo "IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:${{ github.event.workflow_run.head_commit.id }}" >> $GITHUB_ENV
+
+      - name: Apply manifests
         run: |
           kubectl apply -f k8s/deployment.yml
           kubectl apply -f k8s/service.yml
+
+      - name: Rolling update
+        env:
+          IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:${{ github.event.workflow_run.head_commit.id }}
+        run: |
+          DEPLOYMENT_NAME="weather-deployment"
+          CONTAINER_NAME="weather"
+          kubectl set image deployment/"$DEPLOYMENT_NAME" "$CONTAINER_NAME"="$IMAGE" --record
+          kubectl rollout status deployment/"$DEPLOYMENT_NAME" --timeout=120s
+
+      - name: Verify
+        run: |
+          kubectl get pods -o wide
+          kubectl get deploy -o wide
+
