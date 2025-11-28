@@ -26,13 +26,13 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run smoke_test.py
-        run: python ./tests/smoke_test.py
+        run: PYTHONPATH=$PWD:$PYTHONPATH python ./tests/smoke_test.py
 
       - name: Run unit_test.py
-        run: python ./tests/unit_test.py
+        run: PYTHONPATH=$PWD:$PYTHONPATH python ./tests/smoke_test.py
 
       - name: Run integration_test.py
-        run: python ./tests/integration_test.py
+        run: PYTHONPATH=$PWD:$PYTHONPATH python ./tests/integration_test.py
 
       - name: Build Docker image
         env:
