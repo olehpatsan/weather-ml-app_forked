@@ -34,6 +34,10 @@ jobs:
       - name: Run integration_test.py
         run: PYTHONPATH=$PWD:$PYTHONPATH python ./tests/integration_test.py
 
+      - name: Login to DockerHub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login --username "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+
       - name: Build Docker image
         env:
           IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:${{ github.sha }}
@@ -44,8 +48,6 @@ jobs:
           IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:${{ github.sha }}
         run: docker run --rm "$IMAGE" python --version
 
-      - name: Login to DockerHub
-        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login --username "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
       - name: Push Docker image
         env:
