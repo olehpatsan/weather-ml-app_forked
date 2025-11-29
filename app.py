@@ -5,7 +5,7 @@ import time
 
 app = Flask(__name__)
 
-weather_classes = ['clear', 'cloudy', 'drizzly', 'foggy', 'hazey', 'misty', 'rainy', 'smokey', 'thunderstorm']
+weather_classes = ['clear', 'cloudy', 'drizzly', 'foggy', 'hazey', 'misty', 'rain', 'smokey', 'thunderstorm']
 
 def load_model(model_path = 'model/model.pkl'):
 	return pickle.load(open(model_path, 'rb'))
@@ -14,7 +14,7 @@ def classify_weather(features):
 	model = load_model()
 	start = time.time()
 	prediction_index = model.predict(features)[0]
-	latency = round((time.time() - start) * 1000, 2) #we are here
+	latency = round((time.time() - start) * 1000, 2)
 	prediction = weather_classes[prediction_index]
 	return prediction, latency
 
@@ -23,7 +23,7 @@ def classify_weather(features):
 def home():
 	if request.method == 'POST':
 		try:
-			# Extract floats from form data
+
 			temperature = request.form['temperature']
 			pressure = request.form['pressure']
 			humidity = request.form['humidity']
@@ -49,7 +49,7 @@ def home():
 		except Exception as e:
 			error_msg = f"Error processing input: {e}"
 			return render_template('form.html', error=error_msg)
-	# GET method: show the input form
+
 	return render_template('form.html')
 
 
