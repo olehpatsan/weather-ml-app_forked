@@ -5,8 +5,6 @@ import time
 
 app = Flask(__name__)
 
-APP_VERSION = "v1.1"
-
 weather_classes = ['clear', 'cloudy', 'drizzly', 'foggy', 'hazey', 'misty', 'rainy', 'smokey', 'thunderstorm']
 
 def load_model(model_path = 'model/model.pkl'):
@@ -20,9 +18,6 @@ def classify_weather(features):
 	prediction = weather_classes[prediction_index]
 	return prediction, latency
 
-@app.route('/version', methods=['GET'])
-def get_version():
-    return f"Application Version: {APP_VERSION}\n"
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
@@ -55,7 +50,7 @@ def home():
 			error_msg = f"Error processing input: {e}"
 			return render_template('form.html', error=error_msg)
 
-	return render_template('form.html', app_version=APP_VERSION)
+	return render_template('form.html')
 
 
 if __name__ == '__main__':
