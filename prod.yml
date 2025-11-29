@@ -1,0 +1,113 @@
+- name: Prepare Production Server and Deploy App
+  hosts: localhost
+  become: yes
+
+  vars_files:
+    - secrets.yml
+
+  vars:
+    sys_user: "ubuntu"
+
+  tasks:
+
+    - name: Install dependencies
+      apt:
+        name: [ca-certificates, curl, gnupg, lsb-release]
+        state: present
+        update_cache: yes
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install Docker
+      apt:
+        name: [docker-ce, docker-ce-cli, containerd.io]
+        state: present
+        update_cache: yes
+
+    - name: Add user to Docker group
+      user:
+        name: "{{ sys_user }}"
+        groups: docker
+        append: yes
+
+    - name: Install kubectl
+      snap:
+        name: kubectl
+        classic: yes
+
+    - name: Download Minikube
+      get_url:
+        url: https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+        dest: /usr/local/bin/minikube
+        mode: '0755'
+
+    - name: Check Minikube status
+      command: minikube status
+      register: minikube_status
+      ignore_errors: yes
+      become: no
+
+    - name: Start Minikube
+      shell: minikube start --driver=docker
+      become: no
+      when: "'Running' not in minikube_status.stdout"
+
+    - name: Create Registry Secret
+      shell: >
+        minikube kubectl -- create secret docker-registry regcred
+        --docker-username={{ docker_registry_user }}
+        --docker-password={{ docker_registry_pass }}
+        --docker-email={{ docker_registry_email }}
+        --dry-run=client -o yaml | minikube kubectl -- apply -f -
+      become: no
+
+    - name: Create Deployment Manifest
+      copy:
+        dest: "/home/{{ sys_user }}/deployment.yml"
+        content: |
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: weather-deployment
+          spec:
+            replicas: 2
+            selector:
+              matchLabels:
+                app: weather
+            template:
+              metadata:
+                labels:
+                  app: weather
+              spec:
+                containers:
+                  - name: weather-app-container
+                    image: {{ docker_registry_user }}/weather-ml-app:latest
+                    ports:
+                      - containerPort: 5000
+                imagePullSecrets:
+                  - name: regcred
+
+    - name: Apply Deployment
+      shell: minikube kubectl -- apply -f /home/{{ sys_user }}/deployment.yml
+      become: no
+
+
+    - name: Expose Service (NodePort)
+      shell: >
+        minikube kubectl -- expose deployment weather-deployment
+        --type=NodePort --port=5000 --target-port=5000 --name=weather-service
+        --dry-run=client -o yaml | minikube kubectl -- apply -f -
+      become: no
+
+
+    - name: Scale Deployment to 3 Replicas
+      shell: minikube kubectl -- scale deployment/weather-app --replicas=3
+      become: no
