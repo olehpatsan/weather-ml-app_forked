@@ -69,45 +69,15 @@
         --dry-run=client -o yaml | minikube kubectl -- apply -f -
       become: no
 
-    - name: Create Deployment Manifest
-      copy:
-        dest: "/home/{{ sys_user }}/deployment.yml"
-        content: |
-          apiVersion: apps/v1
-          kind: Deployment
-          metadata:
-            name: weather-deployment
-          spec:
-            replicas: 2
-            selector:
-              matchLabels:
-                app: weather
-            template:
-              metadata:
-                labels:
-                  app: weather
-              spec:
-                containers:
-                  - name: weather-app-container
-                    image: {{ docker_registry_user }}/weather-ml-app:latest
-                    ports:
-                      - containerPort: 5000
-                imagePullSecrets:
-                  - name: regcred
-
-    - name: Apply Deployment
-      shell: minikube kubectl -- apply -f /home/{{ sys_user }}/deployment.yml
+    - name: Apply Kubernetes Deployment
+      shell: minikube kubectl -- apply -f /home/ubuntu/weather-ml-app_forked/k8s/deployment.yaml
       become: no
 
-
-    - name: Expose Service (NodePort)
-      shell: >
-        minikube kubectl -- expose deployment weather-deployment
-        --type=NodePort --port=5000 --target-port=5000 --name=weather-service
-        --dry-run=client -o yaml | minikube kubectl -- apply -f -
+    - name: Apply Kubernetes Service
+      shell: minikube kubectl -- apply -f /home/ubuntu/weather-ml-app_forked/k8s/service.yaml
       become: no
 
 
     - name: Scale Deployment to 3 Replicas
-      shell: minikube kubectl -- scale deployment/weather-app --replicas=3
+      shell: minikube kubectl -- scale deployment/weather-deployment --replicas=3
       become: no
