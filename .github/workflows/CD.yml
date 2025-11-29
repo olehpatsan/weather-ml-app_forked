@@ -29,11 +29,11 @@ jobs:
 
       - name: Rolling update
         env:
-          IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:${{ github.event.workflow_run.head_commit.id }}
+          NEW_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:${{ github.sha }}
         run: |
           DEPLOYMENT_NAME="weather-deployment"
           CONTAINER_NAME="weather"
-          kubectl set image deployment/"$DEPLOYMENT_NAME" "$CONTAINER_NAME"="$IMAGE" --record
+          kubectl set image deployment/"$DEPLOYMENT_NAME" "$CONTAINER_NAME"="$NEW_IMAGE" --record
           kubectl rollout status deployment/"$DEPLOYMENT_NAME" --timeout=120s
 
       - name: Verify
