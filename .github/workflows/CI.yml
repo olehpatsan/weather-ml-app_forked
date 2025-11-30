@@ -41,7 +41,7 @@ jobs:
       - name: Build Docker image
         env:
           IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:${{ github.sha }}
-        run: docker build --no-cache -t "$IMAGE" .
+        run: docker build -t "$IMAGE" .
 
       - name: Run container smoke check
         env:
