@@ -2,9 +2,6 @@
   hosts: localhost
   become: yes
 
-  vars_files:
-    - secrets.yml
-
   vars:
     sys_user: "ubuntu"
 
@@ -59,15 +56,6 @@
       shell: minikube start --driver=docker
       become: no
       when: "'Running' not in minikube_status.stdout"
-
-    - name: Create Registry Secret
-      shell: >
-        minikube kubectl -- create secret docker-registry regcred
-        --docker-username={{ docker_registry_user }}
-        --docker-password={{ docker_registry_pass }}
-        --docker-email={{ docker_registry_email }}
-        --dry-run=client -o yaml | minikube kubectl -- apply -f -
-      become: no
 
     - name: Apply Kubernetes Deployment
       shell: minikube kubectl -- apply -f /home/ubuntu/weather-ml-app_forked/k8s/deployment.yaml
