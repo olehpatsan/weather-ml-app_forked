@@ -7,7 +7,6 @@ on:
       - completed
     branches:
       - main
-      - cicd_test
 
 jobs:
   deploy:
@@ -17,10 +16,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set image tag
+      - name: Extract version
         run: |
-          echo "IMAGE_TAG=${{ github.event.workflow_run.head_commit.id }}" >> $GITHUB_ENV
-          echo "IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:${{ github.event.workflow_run.head_commit.id }}" >> $GITHUB_ENV
+          VERSION=${{ github.event.workflow_run.outputs.version }}
+          echo "IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:$VERSION" >> $GITHUB_ENV
 
       - name: Apply manifests
         run: |
@@ -28,16 +27,11 @@ jobs:
           kubectl apply -f k8s/service.yaml
 
       - name: Rolling update
-        env:
-          NEW_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:${{ github.sha }}
         run: |
-          DEPLOYMENT_NAME="weather-deployment"
-          CONTAINER_NAME="weather"
-          kubectl set image deployment/"$DEPLOYMENT_NAME" "$CONTAINER_NAME"="$NEW_IMAGE" --record
-          kubectl rollout status deployment/"$DEPLOYMENT_NAME" --timeout=120s
+          kubectl set image deployment/weather-deployment weather="$IMAGE" --record
+          kubectl rollout status deployment/weather-deployment --timeout=120s
 
       - name: Verify
         run: |
           kubectl get pods -o wide
           kubectl get deploy -o wide
-

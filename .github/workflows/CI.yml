@@ -2,19 +2,39 @@ name: CI pipeline
 
 on:
   push:
-    branches:
-      - main
-      - cicd_test
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build-test-push:
     runs-on: self-hosted
 
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
+
     steps:
       - uses: actions/checkout@v4
+
+      - name: Determine next version
+        id: version
+        env:
+          USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          REPO: weather-ml-app
+          TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          last=$(curl -s -u "$USER:$TOKEN" \
+            "https://hub.docker.com/v2/repositories/$USER/$REPO/tags/?page_size=100" \
+            | jq -r '.results[].name' \
+            | grep -E '^v[0-9]+$' \
+            | sed 's/v//' \
+            | sort -n \
+            | tail -1)
+
+          next=$((last + 1))
+          echo "VERSION=v$next" >> $GITHUB_ENV
+          echo "VERSION=v$next"
+          echo "VERSION=v$next" >> $GITHUB_OUTPUT
 
       - uses: actions/setup-python@v4
         with:
@@ -35,25 +55,11 @@ jobs:
         run: PYTHONPATH=$PWD:$PYTHONPATH python ./tests/integration_test.py
 
       - name: Login to DockerHub
-        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login --username "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" |
+             docker login --username "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
       - name: Build Docker image
-        env:
-          IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:${{ github.sha }}
-        run: docker build -t "$IMAGE" .
-
-      - name: Run container smoke check
-        env:
-          IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:${{ github.sha }}
-        run: docker run --rm "$IMAGE" python --version
-
+        run: docker build -t "${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:${{ env.VERSION }}" .
 
       - name: Push Docker image
-        env:
-          IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:${{ github.sha }}
-        run: |
-          docker push "$IMAGE"
-          docker tag "$IMAGE" "${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:latest"
-          docker push "${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:latest"
-
+        run: docker push "${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:${{ env.VERSION }}"
