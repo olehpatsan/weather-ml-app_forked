@@ -4,8 +4,7 @@ on:
   workflow_run:
     workflows: ["CI pipeline"]
     types: [completed]
-    branches:
-      - main
+    branches: [ main, cicd_test ]
 
 jobs:
   deploy:
@@ -18,8 +17,10 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: version
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set tag
+      - name: Read version
         run: |
           VERSION=$(cat version.txt)
           echo "IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:$VERSION" >> $GITHUB_ENV
