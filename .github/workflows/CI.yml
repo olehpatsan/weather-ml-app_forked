@@ -2,16 +2,15 @@ name: CI pipeline
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - main
+    pull_request:
+    branches:
+      - main
 
 jobs:
   build-test-push:
     runs-on: self-hosted
-
-    outputs:
-      version: ${{ steps.version.outputs.VERSION }}
 
     steps:
       - uses: actions/checkout@v4
@@ -28,12 +27,9 @@ jobs:
             | jq -r '.results[].name' \
             | grep -E '^v[0-9]+$' \
             | sed 's/v//' \
-            | sort -n \
-            | tail -1)
-
+            | sort -n | tail -1)
           next=$((last + 1))
           echo "VERSION=v$next" >> $GITHUB_ENV
-          echo "VERSION=v$next"
           echo "VERSION=v$next" >> $GITHUB_OUTPUT
 
       - uses: actions/setup-python@v4
@@ -45,21 +41,24 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run smoke_test.py
-        run: PYTHONPATH=$PWD:$PYTHONPATH python ./tests/smoke_test.py
-
-      - name: Run unit_test.py
-        run: PYTHONPATH=$PWD:$PYTHONPATH python ./tests/unit_test.py
-
-      - name: Run integration_test.py
-        run: PYTHONPATH=$PWD:$PYTHONPATH python ./tests/integration_test.py
+      - run: PYTHONPATH=$PWD:$PYTHONPATH python ./tests/smoke_test.py
+      - run: PYTHONPATH=$PWD:$PYTHONPATH python ./tests/unit_test.py
+      - run: PYTHONPATH=$PWD:$PYTHONPATH python ./tests/integration_test.py
 
       - name: Login to DockerHub
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" |
              docker login --username "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-      - name: Build Docker image
+      - name: Build
         run: docker build -t "${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:${{ env.VERSION }}" .
 
-      - name: Push Docker image
+      - name: Push
         run: docker push "${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:${{ env.VERSION }}"
+
+      - name: Save version artifact
+        run: echo "${{ env.VERSION }}" > version.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: version
+          path: version.txt

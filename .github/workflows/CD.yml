@@ -3,8 +3,7 @@ name: CD pipeline
 on:
   workflow_run:
     workflows: ["CI pipeline"]
-    types:
-      - completed
+    types: [completed]
     branches:
       - main
 
@@ -16,22 +15,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Extract version
+      - uses: actions/download-artifact@v4
+        with:
+          name: version
+
+      - name: Set tag
         run: |
-          VERSION=${{ github.event.workflow_run.outputs.version }}
+          VERSION=$(cat version.txt)
           echo "IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:$VERSION" >> $GITHUB_ENV
 
-      - name: Apply manifests
-        run: |
+      - run: |
           kubectl apply -f k8s/deployment.yaml
           kubectl apply -f k8s/service.yaml
 
-      - name: Rolling update
-        run: |
-          kubectl set image deployment/weather-deployment weather="$IMAGE" --record
+      - run: |
+          kubectl set image deployment/weather-deployment weather="$IMAGE"
           kubectl rollout status deployment/weather-deployment --timeout=120s
 
-      - name: Verify
-        run: |
+      - run: |
           kubectl get pods -o wide
           kubectl get deploy -o wide
