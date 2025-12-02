@@ -4,7 +4,8 @@ on:
   push:
     branches:
       - main
-    pull_request:
+  pull_request:
+    branches:
       - main
 
 jobs:
@@ -50,6 +51,11 @@ jobs:
 
       - name: Build
         run: docker build -t "${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:${{ env.VERSION }}" .
+
+      - name: Run container smoke test
+        run: |
+          docker run --rm "${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:${{ env.VERSION }}" \
+            echo "Container started successfully"
 
       - name: Push
         run: docker push "${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:${{ env.VERSION }}"
